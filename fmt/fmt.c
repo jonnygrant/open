@@ -77,6 +77,25 @@ fmt_string_t fmt_copy(const fmt_string_t * const src)
     return copy;
 }
 
+fmt_result_t fmt_fprint_string(FILE * restrict stream, fmt_string_t * buf)
+{
+    if(NULL == buf)
+    {
+        return FMT_ERROR_NULL;
+    }
+    else
+    {
+        // TODO check return
+        int result = fprintf(stream, "%s", fmt_string_data(buf));
+        if(result < 0)
+        {
+            return FMT_ERROR_IO;
+        }
+    }
+
+    return FMT_OK;
+}
+
 
 const char * fmt_result(const fmt_string_t * const buf)
 {

@@ -83,6 +83,7 @@ typedef struct
 
 fmt_result_t fmt_init(fmt_string_t * buf);
 fmt_string_t fmt_copy(const fmt_string_t * src);
+fmt_result_t fmt_fprint_string(FILE * restrict stream, fmt_string_t * buf);
 
 /* Access and inspect */
 const char * fmt_string_data(const fmt_string_t * buf);

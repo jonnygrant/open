@@ -9,6 +9,7 @@ Needs improvements to align with C++ {fmt} Format Specifiers.
 
 
 # Known issues to address
+Add fmt_print_string()
 Identify mismatch of {} and args and set error (should avoid any string modification until checked the count matches)
 Identify mismatch {
 Handle escaped {{}}
@@ -25,3 +26,4 @@ DEBUG(fmt_append_string(buf, "}");)
 # Testsuite
 Create a variety of tests which check the output is expected, and that error return is accurate
 Add fmt_copy() test
+

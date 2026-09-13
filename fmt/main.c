@@ -2,6 +2,22 @@
 
 #include "fmt.h"
 
+typedef struct my_struct
+{
+    int a;
+    float f;
+} my_struct_t;
+
+
+static const char * my_format(my_struct_t my)
+{
+    static char buf[50];
+
+    snprintf(buf, sizeof(buf), "my: int %d, float %6.2f", my.a, my.f);
+
+    return buf;
+}
+
 int main()
 {
     fmt_result_t result;
@@ -20,6 +36,13 @@ int main()
     fmt_string_t my_buf = FMT_INIT;
     my_buf = fmt_format("Hello {}", "London");
     printf("%s\n", fmt_string_data(&my_buf));
+
+    fmt_string_t buf_copy = fmt_copy(&my_buf);
+    printf("%s\n", fmt_string_data(&buf_copy));
+
+    result = fmt_fprint_string(stdout, &buf_copy);
+    if(FMT_OK != result) printf("fmt_fprint_string err: %d\n", result);
+    fmt_print("\n", 1);
 
     result = fmt_print("Hello {}\n", "world");
     if(FMT_OK != result) printf("fmt_print err: %d\n", result);
@@ -76,6 +99,10 @@ int main()
     void * vptr = &temp;
     result = fmt_print("void*: {}\n", vptr);
     if(FMT_OK != result) printf("vptr err: %d\n", result);
+
+    my_struct_t my = {10, 3.33f};
+
+    result = fmt_print("my_format const char *: {}\n", my_format(my));
 
     return 0;
 }
