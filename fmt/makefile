@@ -1,6 +1,6 @@
 .PHONY: clean
 
-CFLAGS := -std=c2x -g -Wall -Wextra -O2 -fsanitize=address,undefined -fno-omit-frame-pointer
+CFLAGS := -std=c2x -g -Wall -Wextra -Wno-psabi -O2 -fsanitize=address,undefined -fno-omit-frame-pointer
 
 all:
 	gcc $(CFLAGS) -c -o fmt.o fmt.c

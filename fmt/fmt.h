@@ -48,10 +48,14 @@ typedef enum
     FMT_DOUBLE = 2,
     FMT_STRING = 3,
     FMT_BOOL = 4,
-    FMT_PTR = 5
+    FMT_PTR = 5,
+    FMT_CHAR = 6,
+    FMT_LONG_DOUBLE = 7
 } fmt_type_t;
 
-
+/*
+ * There may be a build note. fmt.h:127:1: note: the ABI of passing union with ‘long double’ has changed in GCC 4.4
+ */
 typedef struct
 {
     fmt_type_t type;
@@ -63,6 +67,8 @@ typedef struct
         const char * str;
         bool b;
         const void * ptr;
+        char c;
+        long double long_d;
     } data;
 } fmt_tag_t;
 
@@ -94,9 +100,7 @@ size_t fmt_length(const fmt_string_t * buf);
 const char * fmt_result(const fmt_string_t * buf);
 
 fmt_result_t fmt_result_code(const fmt_string_t * buf);
-
-/* TODO perhaps no longer needed */
-const char * fmt_result2(const fmt_result_t result);
+const char * fmt_result_string(const fmt_result_t result);
 
 fmt_string_t fmt_format_impl(const char * restrict str, const fmt_tag_t * args, size_t tag_count);
 fmt_result_t fmt_print_impl(FILE * restrict stream, const char * restrict str, const fmt_tag_t * args, size_t tag_count);
@@ -126,12 +130,14 @@ static inline fmt_tag_t fmt_tag_double(double v)   { return (fmt_tag_t){ .type =
 static inline fmt_tag_t fmt_tag_string(const char * str){ return (fmt_tag_t){ .type = FMT_STRING, .data.str = str ? str : "[NULL]" }; }
 static inline fmt_tag_t fmt_tag_bool(bool v)       { return (fmt_tag_t){ .type = FMT_BOOL,    .data.b = v }; }
 static inline fmt_tag_t fmt_tag_ptr(const void * ptr) { return (fmt_tag_t){ .type = FMT_PTR, .data.ptr = ptr }; }
+static inline fmt_tag_t fmt_tag_char(char v)             { return (fmt_tag_t){ .type = FMT_CHAR,        .data.c = v }; }
+static inline fmt_tag_t fmt_tag_long_double(long double v) { return (fmt_tag_t){ .type = FMT_LONG_DOUBLE, .data.long_d = v }; }
 
 // Map types to formatter
 // TODO maybe __ prefix better, as they are internal
 #define FMT_ARG(x) _Generic((x), \
     bool:               fmt_tag_bool, \
-    char:               fmt_tag_int, \
+    char:               fmt_tag_char, \
     signed char:        fmt_tag_int, \
     short:              fmt_tag_int, \
     int:                fmt_tag_int, \
@@ -146,6 +152,7 @@ static inline fmt_tag_t fmt_tag_ptr(const void * ptr) { return (fmt_tag_t){ .typ
     double:             fmt_tag_double, \
     char*:              fmt_tag_string, \
     const char*:        fmt_tag_string, \
+    long double:        fmt_tag_long_double, \
     default:            fmt_tag_ptr \
 )(x)
 

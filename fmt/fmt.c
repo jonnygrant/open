@@ -101,11 +101,11 @@ const char * fmt_result(const fmt_string_t * const buf)
 {
     if(NULL == buf)
     {
-        return fmt_result2(FMT_ERROR_NULL);
+        return fmt_result_string(FMT_ERROR_NULL);
     }
     else
     {
-        return fmt_result2(buf->result);
+        return fmt_result_string(buf->result);
     }
 }
 
@@ -123,7 +123,7 @@ fmt_result_t fmt_result_code(const fmt_string_t * const buf)
 }
 
 
-const char * fmt_result2(const fmt_result_t err)
+const char * fmt_result_string(const fmt_result_t err)
 {
     switch (err)
     {
@@ -259,6 +259,15 @@ static void fmt_append_ptr(fmt_string_t * buf, const void * const ptr)
 }
 
 
+static void fmt_append_long_double(fmt_string_t * buf, const double v)
+{
+    char tmp[128];
+
+    snprintf(tmp, sizeof(tmp), "%lg", v);
+    fmt_append_string(buf, tmp);
+}
+
+
 static void fmt_append_tag(fmt_string_t * buf, const fmt_tag_t * const tag)
 {
     if(NULL == buf)
@@ -305,6 +314,16 @@ static void fmt_append_tag(fmt_string_t * buf, const fmt_tag_t * const tag)
             fmt_append_ptr(buf, tag->data.ptr);
             break;
         }
+        case FMT_CHAR:
+        {
+            fmt_append_char(buf, tag->data.c);
+            break;
+        }
+        case FMT_LONG_DOUBLE:
+        {
+            fmt_append_long_double(buf, tag->data.long_d);
+            break;
+        }
         default:
         {
             buf->result = FMT_ERROR_UNKNOWN;
@@ -314,6 +333,7 @@ static void fmt_append_tag(fmt_string_t * buf, const fmt_tag_t * const tag)
         }
     }
 }
+
 
 // TODO add tag_count and args checks
 fmt_string_t fmt_format_impl(const char * format, const fmt_tag_t * const args, const size_t tag_count)

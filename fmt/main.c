@@ -13,7 +13,7 @@ static const char * my_format(my_struct_t my)
 {
     static char buf[50];
 
-    snprintf(buf, sizeof(buf), "my: int %d, float %6.2f", my.a, my.f);
+    snprintf(buf, sizeof(buf), "int %d, float %6.2f", my.a, my.f);
 
     return buf;
 }
@@ -41,68 +41,78 @@ int main()
     printf("%s\n", fmt_string_data(&buf_copy));
 
     result = fmt_fprint_string(stdout, &buf_copy);
-    if(FMT_OK != result) printf("fmt_fprint_string err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_fprint_string err: %s\n", fmt_result_string(result));
     fmt_print("\n", 1);
 
     result = fmt_print("Hello {}\n", "world");
-    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     result = fmt_print("int = {}\n", 42);
-    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     result = fmt_print("Mixed strings: {} {} {}\n", "name", 10, 1.25);
-    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     result = fmt_fprint(stderr, "stderr {}\n", "foo");
-    if(FMT_OK != result) printf("fmt_fprint err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_fprint err: %s\n", fmt_result_string(result));
 
     result = fmt_fprint(stderr, "NULL {}\n", NULL);
-    if(FMT_OK != result) printf("fmt_fprint err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_fprint err: %s\n", fmt_result_string(result));
 
     result = fmt_fprint(stderr, "nullptr {}\n", nullptr);
-    if(FMT_OK != result) printf("fmt_fprint err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_fprint err: %s\n", fmt_result_string(result));
 
     result = fmt_fprint(stderr, NULL, nullptr);
-    if(FMT_OK != result) printf("fmt_fprint(stderr, NULL, nullptr) err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_fprint(stderr, NULL, nullptr) err: %s\n", fmt_result_string(result));
 
     result = fmt_fprint(stderr, NULL, NULL);
-    if(FMT_OK != result) printf("fmt_fprint(stderr, NULL, NULL) err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_fprint(stderr, NULL, NULL) err: %s\n", fmt_result_string(result));
 
 #if 0
     // TODO this should stop if arg count is not correct and set error code
     result = fmt_print("Mixed strings2: {} {} {}\n", "name");
-    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     result = fmt_print("Mixed strings3: {} {} {}\n", 1);
-    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     // TODO identify individual brace issue
     result = fmt_print("Mixed strings4: {\n", "name");
-    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 #endif
 
     // Show malformed floating point
     const float test = (float)0xFFFFFFFF;
     result = fmt_print("float: {}\n", test);
-    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     const float test2 = NAN;
     result = fmt_print("float: {}\n", test2);
-    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     result = fmt_clear(&buf);
-    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     result = fmt_print("float: {}\n", test2);
 
     char temp = {0};
     void * vptr = &temp;
     result = fmt_print("void*: {}\n", vptr);
-    if(FMT_OK != result) printf("vptr err: %d\n", result);
+    if(FMT_OK != result) printf("vptr err: %s\n", fmt_result_string(result));
 
     my_struct_t my = {10, 3.33f};
 
-    result = fmt_print("my_format const char *: {}\n", my_format(my));
+    result = fmt_print("my_format: {}\n", my_format(my));
+    if(FMT_OK != result) printf("my_format err: %s\n", fmt_result_string(result));
+
+    const int32_t value = 42;
+    result = fmt_print("int32_t: {}\n", value);
+    if(FMT_OK != result) printf("int32_t err: %s\n", fmt_result_string(result));
+
+    const size_t size = 142;
+    result = fmt_print("size_t: {}\n", size);
+    if(FMT_OK != result) printf("size_t err: %s\n", fmt_result_string(result));
+
 
     return 0;
 }
