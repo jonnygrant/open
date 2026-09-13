@@ -1,0 +1,81 @@
+#include <math.h>
+
+#include "fmt.h"
+
+int main()
+{
+    fmt_result_t result;
+
+    fmt_string_t buf;
+    buf = fmt_format("Hello {} newline\n", "planet");
+    printf("%s", fmt_string_data(&buf));
+
+    fmt_print("Again {}", fmt_string_data(&buf));
+
+    fmt_print("pi = {}\n", 3.14159);
+
+    // free any heap that was allocated
+    fmt_free(&buf);
+
+    fmt_string_t my_buf = FMT_INIT;
+    my_buf = fmt_format("Hello {}", "London");
+    printf("%s\n", fmt_string_data(&my_buf));
+
+    result = fmt_print("Hello {}\n", "world");
+    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+
+    result = fmt_print("int = {}\n", 42);
+    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+
+    result = fmt_print("Mixed strings: {} {} {}\n", "name", 10, 1.25);
+    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+
+    result = fmt_fprint(stderr, "stderr {}\n", "foo");
+    if(FMT_OK != result) printf("fmt_fprint err: %d\n", result);
+
+    result = fmt_fprint(stderr, "NULL {}\n", NULL);
+    if(FMT_OK != result) printf("fmt_fprint err: %d\n", result);
+
+    result = fmt_fprint(stderr, "nullptr {}\n", nullptr);
+    if(FMT_OK != result) printf("fmt_fprint err: %d\n", result);
+
+    result = fmt_fprint(stderr, NULL, nullptr);
+    if(FMT_OK != result) printf("fmt_fprint(stderr, NULL, nullptr) err: %d\n", result);
+
+    result = fmt_fprint(stderr, NULL, NULL);
+    if(FMT_OK != result) printf("fmt_fprint(stderr, NULL, NULL) err: %d\n", result);
+
+#if 0
+    // TODO this should stop if arg count is not correct and set error code
+    result = fmt_print("Mixed strings2: {} {} {}\n", "name");
+    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+
+    result = fmt_print("Mixed strings3: {} {} {}\n", 1);
+    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+
+    // TODO identify individual brace issue
+    result = fmt_print("Mixed strings4: {\n", "name");
+    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+#endif
+
+    // Show malformed floating point
+    const float test = (float)0xFFFFFFFF;
+    result = fmt_print("float: {}\n", test);
+    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+
+    const float test2 = NAN;
+    result = fmt_print("float: {}\n", test2);
+    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+
+    result = fmt_clear(&buf);
+    if(FMT_OK != result) printf("fmt_print err: %d\n", result);
+
+    result = fmt_print("float: {}\n", test2);
+
+    char temp = {0};
+    void * vptr = &temp;
+    result = fmt_print("void*: {}\n", vptr);
+    if(FMT_OK != result) printf("vptr err: %d\n", result);
+
+    return 0;
+}

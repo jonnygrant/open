@@ -1,0 +1,196 @@
+#ifndef FMT_H
+#define FMT_H
+
+/**
+ * Copyright 2026 Jonathan Grant <jgrantonline AT gmail com>
+ *
+ * Distributed under the LICENSE.txt included in the release.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * https://www.boost.org/LICENSE_1_0.txt
+*/
+
+#include <stddef.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+
+// TODO rename internal macros with __ prefix, and struct members __fmt
+
+#define FMT_CAPACITY 0x100
+
+#define FMT_INIT (fmt_string_t){ \
+    .heap_ptr = NULL, \
+    .length = 0, \
+    .capacity = FMT_CAPACITY, \
+    .result = FMT_OK, \
+    .internal_buf[0] = '\0' \
+}
+
+typedef enum
+{
+    FMT_OK = 0,
+    FMT_ERROR_FORMAT = 1,
+    FMT_ERROR_MEMORY = 2,
+    FMT_ERROR_IO = 3,
+    FMT_ERROR_MANY_ARGS = 4,
+    FMT_ERROR_FEW_ARGS = 5,
+    FMT_ERROR_NULL = 6,
+    FMT_ERROR_UNKNOWN = 7
+} fmt_result_t;
+
+
+typedef enum
+{
+    FMT_INT = 0,
+    FMT_UINT = 1,
+    FMT_DOUBLE = 2,
+    FMT_STRING = 3,
+    FMT_BOOL = 4,
+    FMT_PTR = 5
+} fmt_type_t;
+
+
+typedef struct
+{
+    fmt_type_t type;
+
+    union {
+        int64_t i;
+        uint64_t u;
+        double d;
+        const char * str;
+        bool b;
+        const void * ptr;
+    } data;
+} fmt_tag_t;
+
+
+#define FMT_COUNT(...) \
+    FMT_NARG(__VA_ARGS__)
+
+// capacity - is set to FMT_CAPACITY if internal_buf is in use
+typedef struct
+{
+    char * heap_ptr;    // NULL if using internal_buf
+    size_t length;      // Current string length (excluding NUL terminator)
+    size_t capacity;    // Current buffer size (internal, or heap)
+    fmt_result_t result;
+    char internal_buf[FMT_CAPACITY];
+} fmt_string_t;
+
+
+fmt_result_t fmt_init(fmt_string_t * buf);
+fmt_string_t fmt_copy(const fmt_string_t * src);
+
+/* Access and inspect */
+const char * fmt_string_data(const fmt_string_t * buf);
+size_t fmt_capacity(const fmt_string_t * buf);
+size_t fmt_length(const fmt_string_t * buf);
+
+/* Always returns a valid NUL terminated string */
+const char * fmt_result(const fmt_string_t * buf);
+
+fmt_result_t fmt_result_code(const fmt_string_t * buf);
+
+/* TODO perhaps no longer needed */
+const char * fmt_result2(const fmt_result_t result);
+
+fmt_string_t fmt_format_impl(const char * restrict str, const fmt_tag_t * args, size_t tag_count);
+fmt_result_t fmt_print_impl(FILE * restrict stream, const char * restrict str, const fmt_tag_t * args, size_t tag_count);
+
+fmt_result_t fmt_free(fmt_string_t * buf);
+fmt_result_t fmt_clear(fmt_string_t * buf);
+
+#define fmt_print(fmt, ...) \
+    fmt_print_impl( \
+        (stdout), \
+        (fmt), \
+        (fmt_tag_t[]){ FMT_ARGS(__VA_ARGS__) }, \
+        FMT_COUNT(__VA_ARGS__) \
+    )
+
+#define fmt_fprint(stream, fmt, ...) \
+    fmt_print_impl( \
+        (stream), \
+        (fmt), \
+        (fmt_tag_t[]){ FMT_ARGS(__VA_ARGS__) }, \
+        FMT_COUNT(__VA_ARGS__) \
+    )
+
+static inline fmt_tag_t fmt_tag_int(int64_t v)     { return (fmt_tag_t){ .type = FMT_INT,     .data.i = v }; }
+static inline fmt_tag_t fmt_tag_uint(uint64_t v)   { return (fmt_tag_t){ .type = FMT_UINT,    .data.u = v }; }
+static inline fmt_tag_t fmt_tag_double(double v)   { return (fmt_tag_t){ .type = FMT_DOUBLE,  .data.d = v }; }
+static inline fmt_tag_t fmt_tag_string(const char * str){ return (fmt_tag_t){ .type = FMT_STRING, .data.str = str ? str : "[NULL]" }; }
+static inline fmt_tag_t fmt_tag_bool(bool v)       { return (fmt_tag_t){ .type = FMT_BOOL,    .data.b = v }; }
+static inline fmt_tag_t fmt_tag_ptr(const void * ptr) { return (fmt_tag_t){ .type = FMT_PTR, .data.ptr = ptr }; }
+
+// Map types to formatter
+// TODO maybe __ prefix better, as they are internal
+#define FMT_ARG(x) _Generic((x), \
+    bool:               fmt_tag_bool, \
+    char:               fmt_tag_int, \
+    signed char:        fmt_tag_int, \
+    short:              fmt_tag_int, \
+    int:                fmt_tag_int, \
+    long:               fmt_tag_int, \
+    long long:          fmt_tag_int, \
+    unsigned char:      fmt_tag_uint, \
+    unsigned short:     fmt_tag_uint, \
+    unsigned int:       fmt_tag_uint, \
+    unsigned long:      fmt_tag_uint, \
+    unsigned long long: fmt_tag_uint, \
+    float:              fmt_tag_double, \
+    double:             fmt_tag_double, \
+    char*:              fmt_tag_string, \
+    const char*:        fmt_tag_string, \
+    default:            fmt_tag_ptr \
+)(x)
+
+#define FMT_ARG_1(a) \
+    FMT_ARG(a)
+
+#define FMT_ARG_2(a, ...) \
+    FMT_ARG(a), FMT_ARG_1(__VA_ARGS__)
+
+#define FMT_ARG_3(a, ...) \
+    FMT_ARG(a), FMT_ARG_2(__VA_ARGS__)
+
+#define FMT_ARG_4(a, ...) \
+    FMT_ARG(a), FMT_ARG_3(__VA_ARGS__)
+
+#define FMT_ARG_5(a, ...) \
+    FMT_ARG(a), FMT_ARG_4(__VA_ARGS__)
+
+#define FMT_ARG_6(a, ...) \
+    FMT_ARG(a), FMT_ARG_5(__VA_ARGS__)
+
+#define FMT_ARG_7(a, ...) \
+    FMT_ARG(a), FMT_ARG_6(__VA_ARGS__)
+
+#define FMT_ARG_8(a, ...) \
+    FMT_ARG(a), FMT_ARG_7(__VA_ARGS__)
+
+#define FMT_NARG(...) \
+    FMT_NARG_I(__VA_ARGS__,8,7,6,5,4,3,2,1)
+
+#define FMT_NARG_I(_1,_2,_3,_4,_5,_6,_7,_8,N,...) N
+
+#define FMT_ARGS(...) \
+    FMT_ARGS_I(FMT_NARG(__VA_ARGS__), __VA_ARGS__)
+
+#define FMT_ARGS_I(n, ...) \
+    FMT_ARGS_II(n, __VA_ARGS__)
+
+#define FMT_ARGS_II(n, ...) \
+    FMT_ARG_##n(__VA_ARGS__)
+
+#define fmt_format(fmt, ...) \
+    fmt_format_impl( \
+        (fmt), \
+        (fmt_tag_t[]){ FMT_ARGS(__VA_ARGS__) }, \
+        FMT_NARG(__VA_ARGS__) \
+    )
+
+#endif
