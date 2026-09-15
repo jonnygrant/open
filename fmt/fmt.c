@@ -12,10 +12,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "fmt.h"
-
-// TODO add validation that pointers are non-NULL
 
 //#define DEBUG(x) x
 #define DEBUG(x)
@@ -77,6 +76,7 @@ fmt_string_t fmt_copy(const fmt_string_t * const src)
     return copy;
 }
 
+
 fmt_result_t fmt_fprint_string(FILE * restrict stream, fmt_string_t * buf)
 {
     if(NULL == buf)
@@ -85,7 +85,6 @@ fmt_result_t fmt_fprint_string(FILE * restrict stream, fmt_string_t * buf)
     }
     else
     {
-        // TODO check return
         int result = fprintf(stream, "%s", fmt_string_data(buf));
         if(result < 0)
         {
@@ -193,7 +192,6 @@ static void fmt_append_string(fmt_string_t * buf, const char * s)
 {
     if(NULL == buf)
     {
-        // TODO: This is an error. Perhaps compile_assert(s != NULL) is suitable
         return;
     }
 
@@ -276,17 +274,8 @@ static void fmt_append_fmt_string(fmt_string_t * buf, const fmt_string_t * const
 
 static void fmt_append_tag(fmt_string_t * buf, const fmt_tag_t * const tag)
 {
-    if(NULL == buf)
-    {
-        // TODO consider error handling
-        return;
-    }
-
-    if(NULL == tag)
-    {
-        // TODO consider error handling
-        return;
-    }
+    assert(NULL != buf);
+    assert(NULL != tag);
 
     switch (tag->type)
     {
@@ -338,15 +327,12 @@ static void fmt_append_tag(fmt_string_t * buf, const fmt_tag_t * const tag)
         default:
         {
             buf->result = FMT_ERROR_UNKNOWN;
-
-            // TODO consider using compile_assert() to issue warning diagnostic
             break;
         }
     }
 }
 
 
-// TODO add tag_count and args checks
 fmt_string_t fmt_format_impl(const char * format, const fmt_tag_t * const args, const size_t tag_count)
 {
     fmt_string_t buf = FMT_INIT;
@@ -358,9 +344,58 @@ fmt_string_t fmt_format_impl(const char * format, const fmt_tag_t * const args, 
         return buf;
     }
 
+    if(tag_count > 0)
+    {
+        if(NULL == args)
+        {
+            buf.result = FMT_ERROR_FEW_ARGS;
+            return buf;
+        }
+    }
+
+    /* check format matches tag_count */
+    {
+        const char * fmt_check = format;
+        size_t counting_placeholder = 0;
+
+        while (*fmt_check)
+        {
+            if (*fmt_check == '{')
+            {
+                if (fmt_check[1] != '}')
+                {
+                    buf.result = FMT_ERROR_FORMAT;
+                    return buf;
+                }
+
+                counting_placeholder++;
+                fmt_check += 2;
+                continue;
+            }
+
+            if (*fmt_check == '}')
+            {
+                buf.result = FMT_ERROR_FORMAT;
+                return buf;
+            }
+
+            fmt_check++;
+        }
+
+        if(counting_placeholder > tag_count)
+        {
+            buf.result = FMT_ERROR_MANY_ARGS;
+            return buf;
+        }
+        else if(counting_placeholder < tag_count)
+        {
+            buf.result = FMT_ERROR_FEW_ARGS;
+            return buf;
+        }
+    }
+
     while (*format)
     {
-        // TODO currently handles only {} placement
         if (*format == '{' && format[1] == '}')
         {
             if (arg < tag_count)

@@ -141,9 +141,7 @@ static inline fmt_tag_t fmt_tag_fmt_string_ptr(fmt_string_t * v) { return (fmt_t
 static inline fmt_tag_t fmt_tag_fmt_string_val(fmt_string_t v) { return (fmt_tag_t){ .type = FMT_STRING_T, .data.fmt_ptr_string = &v }; }
 static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
 
-
 // Map types to formatter
-// TODO maybe __ prefix better, as they are internal
 #define FMT_ARG(x) _Generic((x), \
     bool:               fmt_tag_bool, \
     char:               fmt_tag_char, \
@@ -163,14 +161,17 @@ static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
     const char*:        fmt_tag_string, \
     long double:        fmt_tag_long_double, \
     fmt_string_t*:      fmt_tag_fmt_string_ptr, \
-    fmt_string_t:      fmt_tag_fmt_string_val, \
+    fmt_string_t:       fmt_tag_fmt_string_val, \
     fmt_tag_t:          fmt_tag_fmt_tag, \
     default:            fmt_tag_ptr \
 )(x)
 
+
 /* NB. If you are reading this header after seeing the following, it is because the type is not supported yet:
  * error: incompatible type for argument 1 of ‘fmt_tag_ptr’
 */
+
+#define fmt(x) FMT_ARG (x)
 
 #define FMT_ARG_1(a) \
     FMT_ARG(a)

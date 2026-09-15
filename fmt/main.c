@@ -20,15 +20,14 @@ static const char * my_format(my_struct_t my)
 
 int main()
 {
-    fmt_result_t result;
+    fmt_result_t result = fmt_print("{} {}", 1);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     fmt_string_t buf;
     buf = fmt_format("Hello {} newline\n", "planet");
     printf("%s", fmt_string_data(&buf));
 
     fmt_print("Again {}", fmt_string_data(&buf));
-
-
 
     // free any heap that was allocated
     fmt_free(&buf);
