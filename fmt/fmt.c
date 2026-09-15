@@ -19,6 +19,8 @@
 //#define DEBUG(x) x
 #define DEBUG(x)
 
+static fmt_result_t fmt_append_string(fmt_string_t * buf, const char * s);
+
 fmt_result_t fmt_init(fmt_string_t * buf)
 {
     fmt_result_t result = FMT_OK;
@@ -59,12 +61,12 @@ fmt_string_t fmt_copy(const fmt_string_t * const src)
         }
         else
         {
-            memcpy(copy.heap_ptr, src->heap_ptr, src->length);
+            memcpy(copy.heap_ptr, src->heap_ptr, src->length+1);
         }
     }
     else
     {
-        memcpy(copy.internal_buf, src->internal_buf, src->length);
+        memcpy(copy.internal_buf, src->internal_buf, src->length+1);
     }
 
     if(FMT_OK == copy.result)
@@ -77,7 +79,20 @@ fmt_string_t fmt_copy(const fmt_string_t * const src)
 }
 
 
-fmt_result_t fmt_fprint_string(FILE * restrict stream, fmt_string_t * buf)
+fmt_result_t fmt_concat(fmt_string_t * dst, const fmt_string_t * const src)
+{
+    if(NULL == dst || NULL == src) return FMT_ERROR_NULL;
+
+    if((FMT_OK != dst->result) || (FMT_OK != src->result))
+    {
+        return FMT_ERROR_STATE;
+    }
+
+    return fmt_append_string(dst, fmt_string_data(src));
+}
+
+
+fmt_result_t fmt_fprint_string(FILE * restrict stream, const fmt_string_t * const buf)
 {
     if(NULL == buf)
     {
@@ -166,7 +181,7 @@ static void fmt_append_char(fmt_string_t * buf, const char c)
 
             if (new_alloc_buf)
             {
-                memcpy(new_alloc_buf, buf->internal_buf, buf->length);
+                memcpy(new_alloc_buf, buf->internal_buf, buf->length+1);
             }
         }
 
@@ -188,17 +203,19 @@ static void fmt_append_char(fmt_string_t * buf, const char c)
 }
 
 
-static void fmt_append_string(fmt_string_t * buf, const char * s)
+static fmt_result_t fmt_append_string(fmt_string_t * buf, const char * s)
 {
+    fmt_result_t result = FMT_OK;
+
     if(NULL == buf)
     {
-        return;
+        return FMT_ERROR_NULL;
     }
 
     if(NULL == s)
     {
         buf->result = FMT_ERROR_NULL;
-        return;
+        return FMT_ERROR_NULL;
     }
 
     while (*s)
@@ -207,9 +224,12 @@ static void fmt_append_string(fmt_string_t * buf, const char * s)
 
         if(buf->result != FMT_OK)
         {
-            return;
+            result = buf->result;
+            break;
         }
     }
+
+    return result;
 }
 
 
@@ -419,13 +439,37 @@ fmt_string_t fmt_format_impl(const char * format, const fmt_tag_t * const args, 
 }
 
 
+fmt_result_t fmt_format_append_impl(fmt_string_t * dst, const char * restrict format, const fmt_tag_t * args, size_t tag_count)
+{
+    fmt_result_t result = FMT_OK;
+
+    if(NULL == dst)
+    {
+        result = FMT_ERROR_NULL;
+    }
+    else
+    {
+        fmt_string_t src = fmt_format_impl(format, args, tag_count);
+        if(FMT_OK == src.result)
+        {
+            dst->result = fmt_concat(dst, &src);
+            result = dst->result;
+        }
+
+        fmt_free(&src);
+    }
+
+    return result;
+}
+
 fmt_result_t fmt_print_impl(FILE * restrict stream, const char * const str, const fmt_tag_t * const args, const size_t tag_count)
 {
     fmt_string_t s = fmt_format_impl(str, args, tag_count);
 
     if(s.result != FMT_OK)
     {
-         return s.result;
+        fmt_free(&s);
+        return s.result;
     }
 
     const int fputs_result = fputs(fmt_string_data(&s), stream);
@@ -437,7 +481,7 @@ fmt_result_t fmt_print_impl(FILE * restrict stream, const char * const str, cons
         s.result = FMT_ERROR_IO;
     }
 
-    fmt_result_t free_result = fmt_free(&s);
+    const fmt_result_t free_result = fmt_free(&s);
 
     /* If no existing, error, copy fmt_free() error if one occured */
     if(FMT_OK == s.result)

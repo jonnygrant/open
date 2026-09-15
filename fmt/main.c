@@ -18,6 +18,7 @@ static const char * my_format(my_struct_t my)
     return buf;
 }
 
+
 int main()
 {
     fmt_result_t result = fmt_print("{} {}", 1);
@@ -37,15 +38,14 @@ int main()
 
     fmt_print("pi = {}\n", 3.14159);
     fmt_print("FMT_ARG pi = {}\n", FMT_ARG(3.14159));
-    fmt_print("fmt_format pi = {}\n", fmt_format("{}", 3.14159));
+
+    // Not supported, would cause a dangling pointer
+    //fmt_print("fmt_format pi = {}\n", fmt_format("{}", 3.14159));
 
     float my_float = 6.1f;
     fmt_string_t buf2 = fmt_format("{}", my_float);
     fmt_print("my_float {}\n", &buf2);
-
-
-    // Not yet composable strings, as that would make each tag larger on the stack
-    //fmt_print("my_float {}\n", fmt_format("{.2f}", my_float));
+    fmt_free(&buf2);
 
     fmt_print("my name {}\n", &"name");
 
@@ -133,5 +133,19 @@ int main()
     result = fmt_print("char: {}\n", byte);
     if(FMT_OK != result) printf("char err: %s\n", fmt_result_string(result));
 
+    fmt_string_t first = fmt_format("{}", "first ");
+    if(FMT_OK != fmt_result_code(&first)) printf("fmt_format err: %s\n", fmt_result(&first));
+
+    result = fmt_format_append(&first, "{}", "second ");
+    if(FMT_OK != result) printf("fmt_format second err: %s\n", fmt_result_string(result));
+
+    fmt_string_t third = fmt_format("{}", "third\n");
+
+    result = fmt_concat(&first, &third);
+    if(FMT_OK != result) printf("fmt_concat err: %s\n", fmt_result_string(result));
+
+    fmt_print("{}", &first);
+
+    fmt_free(&buf);
     return 0;
 }

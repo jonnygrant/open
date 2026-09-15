@@ -16,9 +16,7 @@
 #include <stdint.h>
 
 
-// TODO consider renaming internal macros with _FMT prefix, and struct members _fmt
-
-#define FMT_CAPACITY 0x100
+#define FMT_CAPACITY (0x100)
 
 #define FMT_INIT (fmt_string_t){ \
     .heap_ptr = NULL, \
@@ -37,7 +35,8 @@ typedef enum
     FMT_ERROR_MANY_ARGS = 4,
     FMT_ERROR_FEW_ARGS = 5,
     FMT_ERROR_NULL = 6,
-    FMT_ERROR_UNKNOWN = 7
+    FMT_ERROR_STATE = 7,
+    FMT_ERROR_UNKNOWN = 8
 } fmt_result_t;
 
 
@@ -94,20 +93,29 @@ typedef struct
 
 fmt_result_t fmt_init(fmt_string_t * buf);
 fmt_string_t fmt_copy(const fmt_string_t * src);
-fmt_result_t fmt_fprint_string(FILE * restrict stream, fmt_string_t * buf);
+fmt_result_t fmt_fprint_string(FILE * restrict stream, const fmt_string_t * buf);
+fmt_result_t fmt_concat(fmt_string_t * dst, const fmt_string_t * src);
+fmt_result_t fmt_format_append(fmt_string_t * buf, const char * restrict format, ...);
 
 /* Access and inspect */
 const char * fmt_string_data(const fmt_string_t * buf);
+
+/* The capacity in bytes of the buffer */
 size_t fmt_capacity(const fmt_string_t * buf);
+
+/* The length of text in bytes excluding null terminator */
 size_t fmt_length(const fmt_string_t * buf);
 
-/* Always returns a valid NUL terminated string */
+/* Access a string representing of the result status code */
 const char * fmt_result(const fmt_string_t * buf);
 
 fmt_result_t fmt_result_code(const fmt_string_t * buf);
+
+/* Access a string representing of the result status code */
 const char * fmt_result_string(const fmt_result_t result);
 
-fmt_string_t fmt_format_impl(const char * restrict str, const fmt_tag_t * args, size_t tag_count);
+fmt_string_t fmt_format_impl(const char * restrict format, const fmt_tag_t * args, size_t tag_count);
+fmt_result_t fmt_format_append_impl(fmt_string_t * dst, const char * restrict format, const fmt_tag_t * args, size_t tag_count);
 fmt_result_t fmt_print_impl(FILE * restrict stream, const char * restrict str, const fmt_tag_t * args, size_t tag_count);
 
 fmt_result_t fmt_free(fmt_string_t * buf);
@@ -138,7 +146,6 @@ static inline fmt_tag_t fmt_tag_ptr(const void * ptr) { return (fmt_tag_t){ .typ
 static inline fmt_tag_t fmt_tag_char(char v)             { return (fmt_tag_t){ .type = FMT_CHAR,        .data.c = v }; }
 static inline fmt_tag_t fmt_tag_long_double(long double v) { return (fmt_tag_t){ .type = FMT_LONG_DOUBLE, .data.long_d = v }; }
 static inline fmt_tag_t fmt_tag_fmt_string_ptr(fmt_string_t * v) { return (fmt_tag_t){ .type = FMT_STRING_T, .data.fmt_ptr_string = v }; }
-static inline fmt_tag_t fmt_tag_fmt_string_val(fmt_string_t v) { return (fmt_tag_t){ .type = FMT_STRING_T, .data.fmt_ptr_string = &v }; }
 static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
 
 // Map types to formatter
@@ -161,7 +168,6 @@ static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
     const char*:        fmt_tag_string, \
     long double:        fmt_tag_long_double, \
     fmt_string_t*:      fmt_tag_fmt_string_ptr, \
-    fmt_string_t:       fmt_tag_fmt_string_val, \
     fmt_tag_t:          fmt_tag_fmt_tag, \
     default:            fmt_tag_ptr \
 )(x)
@@ -217,5 +223,14 @@ static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
         (fmt_tag_t[]){ FMT_ARGS(__VA_ARGS__) }, \
         FMT_NARG(__VA_ARGS__) \
     )
+
+#define fmt_format_append(dst, fmt, ...) \
+    fmt_format_append_impl( \
+        (dst), \
+        (fmt), \
+        (fmt_tag_t[]){ FMT_ARGS(__VA_ARGS__) }, \
+        FMT_NARG(__VA_ARGS__) \
+    )
+
 
 #endif
