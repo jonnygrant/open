@@ -16,7 +16,7 @@
 #include <stdint.h>
 
 
-// TODO rename internal macros with __ prefix, and struct members __fmt
+// TODO consider renaming internal macros with _FMT prefix, and struct members _fmt
 
 #define FMT_CAPACITY 0x100
 
@@ -50,8 +50,22 @@ typedef enum
     FMT_BOOL = 4,
     FMT_PTR = 5,
     FMT_CHAR = 6,
-    FMT_LONG_DOUBLE = 7
+    FMT_LONG_DOUBLE = 7,
+    FMT_STRING_T = 8
 } fmt_type_t;
+
+
+// capacity - is set to FMT_CAPACITY if internal_buf is in use
+// heap_ptr is NULL when not in use
+typedef struct
+{
+    char * heap_ptr;    // NULL if using internal_buf
+    size_t length;      // Current string length (excluding NUL terminator)
+    size_t capacity;    // Current buffer size (internal, or heap)
+    fmt_result_t result;
+    char internal_buf[FMT_CAPACITY];
+} fmt_string_t;
+
 
 /*
  * There may be a build note. fmt.h:127:1: note: the ABI of passing union with ‘long double’ has changed in GCC 4.4
@@ -69,22 +83,13 @@ typedef struct
         const void * ptr;
         char c;
         long double long_d;
+        fmt_string_t * fmt_ptr_string;
     } data;
 } fmt_tag_t;
 
 
 #define FMT_COUNT(...) \
     FMT_NARG(__VA_ARGS__)
-
-// capacity - is set to FMT_CAPACITY if internal_buf is in use
-typedef struct
-{
-    char * heap_ptr;    // NULL if using internal_buf
-    size_t length;      // Current string length (excluding NUL terminator)
-    size_t capacity;    // Current buffer size (internal, or heap)
-    fmt_result_t result;
-    char internal_buf[FMT_CAPACITY];
-} fmt_string_t;
 
 
 fmt_result_t fmt_init(fmt_string_t * buf);
@@ -132,6 +137,10 @@ static inline fmt_tag_t fmt_tag_bool(bool v)       { return (fmt_tag_t){ .type =
 static inline fmt_tag_t fmt_tag_ptr(const void * ptr) { return (fmt_tag_t){ .type = FMT_PTR, .data.ptr = ptr }; }
 static inline fmt_tag_t fmt_tag_char(char v)             { return (fmt_tag_t){ .type = FMT_CHAR,        .data.c = v }; }
 static inline fmt_tag_t fmt_tag_long_double(long double v) { return (fmt_tag_t){ .type = FMT_LONG_DOUBLE, .data.long_d = v }; }
+static inline fmt_tag_t fmt_tag_fmt_string_ptr(fmt_string_t * v) { return (fmt_tag_t){ .type = FMT_STRING_T, .data.fmt_ptr_string = v }; }
+static inline fmt_tag_t fmt_tag_fmt_string_val(fmt_string_t v) { return (fmt_tag_t){ .type = FMT_STRING_T, .data.fmt_ptr_string = &v }; }
+static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
+
 
 // Map types to formatter
 // TODO maybe __ prefix better, as they are internal
@@ -153,8 +162,15 @@ static inline fmt_tag_t fmt_tag_long_double(long double v) { return (fmt_tag_t){
     char*:              fmt_tag_string, \
     const char*:        fmt_tag_string, \
     long double:        fmt_tag_long_double, \
+    fmt_string_t*:      fmt_tag_fmt_string_ptr, \
+    fmt_string_t:      fmt_tag_fmt_string_val, \
+    fmt_tag_t:          fmt_tag_fmt_tag, \
     default:            fmt_tag_ptr \
 )(x)
+
+/* NB. If you are reading this header after seeing the following, it is because the type is not supported yet:
+ * error: incompatible type for argument 1 of ‘fmt_tag_ptr’
+*/
 
 #define FMT_ARG_1(a) \
     FMT_ARG(a)

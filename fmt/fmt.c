@@ -268,6 +268,12 @@ static void fmt_append_long_double(fmt_string_t * buf, const double v)
 }
 
 
+static void fmt_append_fmt_string(fmt_string_t * buf, const fmt_string_t * const v)
+{
+    fmt_append_string(buf, fmt_string_data(v));
+}
+
+
 static void fmt_append_tag(fmt_string_t * buf, const fmt_tag_t * const tag)
 {
     if(NULL == buf)
@@ -322,6 +328,11 @@ static void fmt_append_tag(fmt_string_t * buf, const fmt_tag_t * const tag)
         case FMT_LONG_DOUBLE:
         {
             fmt_append_long_double(buf, tag->data.long_d);
+            break;
+        }
+        case FMT_STRING_T:
+        {
+            fmt_append_fmt_string(buf, tag->data.fmt_ptr_string);
             break;
         }
         default:

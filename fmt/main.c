@@ -28,10 +28,27 @@ int main()
 
     fmt_print("Again {}", fmt_string_data(&buf));
 
-    fmt_print("pi = {}\n", 3.14159);
+
 
     // free any heap that was allocated
     fmt_free(&buf);
+
+    fmt_tag_t my_tag = {FMT_BOOL, .data.b = true};
+    fmt_print_impl(stdout, "my_tag {}\n", &my_tag, 1);
+
+    fmt_print("pi = {}\n", 3.14159);
+    fmt_print("FMT_ARG pi = {}\n", FMT_ARG(3.14159));
+    fmt_print("fmt_format pi = {}\n", fmt_format("{}", 3.14159));
+
+    float my_float = 6.1f;
+    fmt_string_t buf2 = fmt_format("{}", my_float);
+    fmt_print("my_float {}\n", &buf2);
+
+
+    // Not yet composable strings, as that would make each tag larger on the stack
+    //fmt_print("my_float {}\n", fmt_format("{.2f}", my_float));
+
+    fmt_print("my name {}\n", &"name");
 
     fmt_string_t my_buf = FMT_INIT;
     my_buf = fmt_format("Hello {}", "London");
@@ -113,6 +130,9 @@ int main()
     result = fmt_print("size_t: {}\n", size);
     if(FMT_OK != result) printf("size_t err: %s\n", fmt_result_string(result));
 
+    const char byte = 'a';
+    result = fmt_print("char: {}\n", byte);
+    if(FMT_OK != result) printf("char err: %s\n", fmt_result_string(result));
 
     return 0;
 }
