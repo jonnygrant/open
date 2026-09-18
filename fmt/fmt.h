@@ -15,6 +15,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* Implemented as macros
+ *
+fmt_result_t fmt_print(const char *restrict format, ...);
+fmt_result_t fmt_fprint(FILE * restrict stream, const char *restrict format, ...);
+fmt_string_t fmt_format(const char *restrict format, ...);
+fmt_result_t fmt_format_append(fmt_string_t * buf, const char * restrict format, ...);
+*/
 
 #define FMT_CAPACITY (0x100)
 
@@ -25,6 +32,7 @@
     .result = FMT_OK, \
     .internal_buf[0] = '\0' \
 }
+
 
 typedef enum
 {
@@ -90,12 +98,10 @@ typedef struct
 #define FMT_COUNT(...) \
     FMT_NARG(__VA_ARGS__)
 
-
 fmt_result_t fmt_init(fmt_string_t * buf);
 fmt_string_t fmt_copy(const fmt_string_t * src);
 fmt_result_t fmt_fprint_string(FILE * restrict stream, const fmt_string_t * buf);
 fmt_result_t fmt_concat(fmt_string_t * dst, const fmt_string_t * src);
-fmt_result_t fmt_format_append(fmt_string_t * buf, const char * restrict format, ...);
 
 /* Access and inspect */
 const char * fmt_string_data(const fmt_string_t * buf);
@@ -138,15 +144,29 @@ fmt_result_t fmt_clear(fmt_string_t * buf);
     )
 
 static inline fmt_tag_t fmt_tag_int(int64_t v)     { return (fmt_tag_t){ .type = FMT_INT,     .data.i = v }; }
+static inline fmt_tag_t fmt_tag_int_ptr(int64_t * v)
+{
+    if(NULL != v)
+    {
+        return (fmt_tag_t){ .type = FMT_INT,     .data.i = *v };
+    }
+    else
+    {
+        return (fmt_tag_t){ .type = FMT_STRING, .data.str = "*int NULL" };
+    }
+}
+
 static inline fmt_tag_t fmt_tag_uint(uint64_t v)   { return (fmt_tag_t){ .type = FMT_UINT,    .data.u = v }; }
 static inline fmt_tag_t fmt_tag_double(double v)   { return (fmt_tag_t){ .type = FMT_DOUBLE,  .data.d = v }; }
-static inline fmt_tag_t fmt_tag_string(const char * str){ return (fmt_tag_t){ .type = FMT_STRING, .data.str = str ? str : "[NULL]" }; }
+static inline fmt_tag_t fmt_tag_string(const char * str){ return (fmt_tag_t){ .type = FMT_STRING, .data.str = str ? str : "(null)" }; }
 static inline fmt_tag_t fmt_tag_bool(bool v)       { return (fmt_tag_t){ .type = FMT_BOOL,    .data.b = v }; }
 static inline fmt_tag_t fmt_tag_ptr(const void * ptr) { return (fmt_tag_t){ .type = FMT_PTR, .data.ptr = ptr }; }
 static inline fmt_tag_t fmt_tag_char(char v)             { return (fmt_tag_t){ .type = FMT_CHAR,        .data.c = v }; }
 static inline fmt_tag_t fmt_tag_long_double(long double v) { return (fmt_tag_t){ .type = FMT_LONG_DOUBLE, .data.long_d = v }; }
 static inline fmt_tag_t fmt_tag_fmt_string_ptr(fmt_string_t * v) { return (fmt_tag_t){ .type = FMT_STRING_T, .data.fmt_ptr_string = v }; }
+static inline fmt_tag_t fmt_tag_fmt_null_ptr(nullptr_t v) { return (fmt_tag_t){ .type = FMT_STRING, .data.str = "nullptr_t" }; }
 static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
+static inline fmt_tag_t fmt_arg_UNKNOWN_ERROR(void * __attribute__((unused)) ptr) { return (fmt_tag_t){ .type = FMT_STRING, .data.str = "Unknown_Tag" }; }
 
 // Map types to formatter
 #define FMT_ARG(x) _Generic((x), \
@@ -155,6 +175,7 @@ static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
     signed char:        fmt_tag_int, \
     short:              fmt_tag_int, \
     int:                fmt_tag_int, \
+    int*:               fmt_tag_int_ptr, \
     long:               fmt_tag_int, \
     long long:          fmt_tag_int, \
     unsigned char:      fmt_tag_uint, \
@@ -169,14 +190,13 @@ static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
     long double:        fmt_tag_long_double, \
     fmt_string_t*:      fmt_tag_fmt_string_ptr, \
     fmt_tag_t:          fmt_tag_fmt_tag, \
-    default:            fmt_tag_ptr \
+    void*:              fmt_tag_ptr, \
+    nullptr_t:          fmt_tag_fmt_null_ptr \
 )(x)
 
+/* A default with const void * */
 
-/* NB. If you are reading this header after seeing the following, it is because the type is not supported yet:
- * error: incompatible type for argument 1 of ‘fmt_tag_ptr’
-*/
-
+/* Provide a simpler macro name */
 #define fmt(x) FMT_ARG (x)
 
 #define FMT_ARG_1(a) \
@@ -231,6 +251,5 @@ static inline fmt_tag_t fmt_tag_fmt_tag(fmt_tag_t v) { return v; }
         (fmt_tag_t[]){ FMT_ARGS(__VA_ARGS__) }, \
         FMT_NARG(__VA_ARGS__) \
     )
-
 
 #endif

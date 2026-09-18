@@ -7,7 +7,6 @@
  * https://www.boost.org/LICENSE_1_0.txt
 */
 
-
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
@@ -15,6 +14,9 @@
 #include <assert.h>
 
 #include "fmt.h"
+
+/* Avoid unbounded memory allocations */
+#define FMT_MAX_CAPACITY (100'000)
 
 //#define DEBUG(x) x
 #define DEBUG(x)
@@ -52,6 +54,12 @@ fmt_string_t fmt_copy(const fmt_string_t * const src)
         return copy;
     }
 
+    if(FMT_OK != src->result)
+    {
+        copy.result = FMT_ERROR_STATE;
+        return copy;
+    }
+
     if(src->heap_ptr)
     {
         copy.heap_ptr = malloc(src->capacity);
@@ -81,7 +89,10 @@ fmt_string_t fmt_copy(const fmt_string_t * const src)
 
 fmt_result_t fmt_concat(fmt_string_t * dst, const fmt_string_t * const src)
 {
-    if(NULL == dst || NULL == src) return FMT_ERROR_NULL;
+    if(NULL == dst || NULL == src)
+    {
+        return FMT_ERROR_NULL;
+    }
 
     if((FMT_OK != dst->result) || (FMT_OK != src->result))
     {
@@ -100,6 +111,11 @@ fmt_result_t fmt_fprint_string(FILE * restrict stream, const fmt_string_t * cons
     }
     else
     {
+        if(FMT_OK != buf->result)
+        {
+            return FMT_ERROR_STATE;
+        }
+
         int result = fprintf(stream, "%s", fmt_string_data(buf));
         if(result < 0)
         {
@@ -158,7 +174,21 @@ static void fmt_append_char(fmt_string_t * buf, const char c)
 {
     if (buf->length + 1 >= buf->capacity)
     {
-        size_t new_capacity = buf->capacity * 2;
+        /* Avoid overflow */
+        if (buf->capacity > (SIZE_MAX / 2))
+        {
+            buf->result = FMT_ERROR_MEMORY;
+            return;
+        }
+
+        const size_t new_capacity = buf->capacity * 2;
+
+        /* Avoid high memory usage */
+        if(new_capacity > FMT_MAX_CAPACITY)
+        {
+            buf->result = FMT_ERROR_MEMORY;
+            return;
+        }
 
         char * new_alloc_buf;
 
@@ -210,6 +240,11 @@ static fmt_result_t fmt_append_string(fmt_string_t * buf, const char * s)
     if(NULL == buf)
     {
         return FMT_ERROR_NULL;
+    }
+
+    if(FMT_OK != buf->result)
+    {
+        return FMT_ERROR_STATE;
     }
 
     if(NULL == s)
@@ -292,7 +327,7 @@ static void fmt_append_fmt_string(fmt_string_t * buf, const fmt_string_t * const
 }
 
 
-static void fmt_append_tag(fmt_string_t * buf, const fmt_tag_t * const tag)
+static void fmt_tag_append(fmt_string_t * buf, const fmt_tag_t * const tag)
 {
     assert(NULL != buf);
     assert(NULL != tag);
@@ -420,7 +455,7 @@ fmt_string_t fmt_format_impl(const char * format, const fmt_tag_t * const args, 
         {
             if (arg < tag_count)
             {
-                fmt_append_tag(&buf, &args[arg++]);
+                fmt_tag_append(&buf, &args[arg++]);
 
                 if(buf.result != FMT_OK)
                 {
@@ -449,6 +484,11 @@ fmt_result_t fmt_format_append_impl(fmt_string_t * dst, const char * restrict fo
     }
     else
     {
+        if(FMT_OK != dst->result)
+        {
+            return dst->result;
+        }
+
         fmt_string_t src = fmt_format_impl(format, args, tag_count);
         if(FMT_OK == src.result)
         {
@@ -462,9 +502,10 @@ fmt_result_t fmt_format_append_impl(fmt_string_t * dst, const char * restrict fo
     return result;
 }
 
-fmt_result_t fmt_print_impl(FILE * restrict stream, const char * const str, const fmt_tag_t * const args, const size_t tag_count)
+
+fmt_result_t fmt_print_impl(FILE * restrict stream, const char * const format, const fmt_tag_t * const args, const size_t tag_count)
 {
-    fmt_string_t s = fmt_format_impl(str, args, tag_count);
+    fmt_string_t s = fmt_format_impl(format, args, tag_count);
 
     if(s.result != FMT_OK)
     {
@@ -473,7 +514,6 @@ fmt_result_t fmt_print_impl(FILE * restrict stream, const char * const str, cons
     }
 
     const int fputs_result = fputs(fmt_string_data(&s), stream);
-
     if(EOF == fputs_result)
     {
         DEBUG(printf("fputs returned %d, errno %d\n", result, errno);)
@@ -505,7 +545,7 @@ const char * fmt_string_data(const fmt_string_t * const buf)
 
     if(NULL == buf)
     {
-        ptr = "";
+        return fmt_result_string(FMT_ERROR_NULL);
     }
     else
     {

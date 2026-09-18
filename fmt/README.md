@@ -11,9 +11,8 @@ Needs improvements to align with C++ {fmt} Format Specifiers.
 # Known issues to address
 Add fmt_print_string()
 Identify mismatch of {} and args and set error (should avoid any string modification until checked the count matches)
-Identify mismatch {
 Handle escaped {{}}
-Consider reporting errors in fmt_append_* if pointer are NULL. Could validate implemenation using compile_assert()
+ Could validate implemenation using compile_assert()
 Zero argument handling fmt_("Hello world!\n); does not work
 
 # TODO
