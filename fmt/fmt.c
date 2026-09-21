@@ -281,8 +281,7 @@ static void fmt_append_uint(fmt_string_t * buf, const uint64_t v)
 {
     char tmp[64];
 
-    snprintf(tmp, sizeof(tmp), "%llu",
-             (unsigned long long)v);
+    snprintf(tmp, sizeof(tmp), "%llu", (unsigned long long)v);
 
     fmt_append_string(buf, tmp);
 }
@@ -439,12 +438,12 @@ fmt_string_t fmt_format_impl(const char * format, const fmt_tag_t * const args, 
 
         if(counting_placeholder > tag_count)
         {
-            buf.result = FMT_ERROR_MANY_ARGS;
+            buf.result = FMT_ERROR_FEW_ARGS;
             return buf;
         }
         else if(counting_placeholder < tag_count)
         {
-            buf.result = FMT_ERROR_FEW_ARGS;
+            buf.result = FMT_ERROR_MANY_ARGS;
             return buf;
         }
     }
@@ -496,7 +495,14 @@ fmt_result_t fmt_format_append_impl(fmt_string_t * dst, const char * restrict fo
             result = dst->result;
         }
 
-        fmt_free(&src);
+        const fmt_result_t free_result = fmt_free(&src);
+        if(FMT_OK == dst->result)
+        {
+            if(FMT_OK != free_result)
+            {
+                dst->result = free_result;
+            }
+        }
     }
 
     return result;
@@ -509,7 +515,13 @@ fmt_result_t fmt_print_impl(FILE * restrict stream, const char * const format, c
 
     if(s.result != FMT_OK)
     {
-        fmt_free(&s);
+        const fmt_result_t free_result = fmt_free(&s);
+
+        if(FMT_OK != free_result)
+        {
+            s.result = free_result;
+        }
+
         return s.result;
     }
 

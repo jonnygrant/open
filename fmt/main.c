@@ -2,6 +2,11 @@
 
 #include "fmt.h"
 
+#define __FILE_LINE__ __FILE__ ":" STRINGIFY(__LINE__) ":"
+
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
+
 typedef struct my_struct
 {
     int a;
@@ -21,44 +26,56 @@ static const char * my_format(my_struct_t my)
 
 int main()
 {
-    fmt_result_t result = fmt_print("{} {}", 1);
-    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
+    fmt_result_t result;
+
+    result = fmt_print("{} {} {} {}", 1);
+    if(FMT_OK != result) printf("%s fmt_print err: %s\n", __FILE_LINE__, fmt_result_string(result));
+
 
     fmt_string_t buf;
     buf = fmt_format("Hello {} newline\n", "planet");
     printf("%s", fmt_string_data(&buf));
 
-    fmt_print("Again {}", fmt_string_data(&buf));
+    result = fmt_print("Again {}", fmt_string_data(&buf));
+    if(FMT_OK != result) printf("fmt_string_data err: %s\n", fmt_result_string(result));
 
     // free any heap that was allocated
-    fmt_free(&buf);
+    result = fmt_free(&buf);
+    if(FMT_OK != result) printf("fmt_free err: %s\n", fmt_result_string(result));
 
     fmt_tag_t my_tag = {FMT_BOOL, .data.b = true};
-    fmt_print_impl(stdout, "my_tag {}\n", &my_tag, 1);
+    result = fmt_print_impl(stdout, "my_tag {}\n", &my_tag, 1);
 
-    fmt_print("pi = {}\n", 3.14159);
-    fmt_print("FMT_ARG pi = {}\n", FMT_ARG(3.14159));
+    result = fmt_print("pi = {}\n", 3.14159);
+    result = fmt_print("FMT_ARG pi = {}\n", FMT_ARG(3.14159));
 
     // Not supported, would cause a dangling pointer
     //fmt_print("fmt_format pi = {}\n", fmt_format("{}", 3.14159));
 
     float my_float = 6.1f;
     fmt_string_t buf2 = fmt_format("{}", my_float);
-    fmt_print("my_float {}\n", &buf2);
-    fmt_free(&buf2);
+    result = fmt_print("my_float {}\n", &buf2);
+    if(FMT_OK != result) printf("%s fmt_print err: %s\n", __FILE_LINE__, fmt_result_string(result));
 
-    fmt_print("my name {}\n", &"name");
+    result = fmt_free(&buf2);
+    if(FMT_OK != result) printf("fmt_free err: %s\n", fmt_result_string(result));
+
+    //fmt_print("my name {}\n", &"name");
 
     fmt_string_t my_buf = FMT_INIT;
-    my_buf = fmt_format("Hello {}", "London");
-    printf("%s\n", fmt_string_data(&my_buf));
+    my_buf = fmt_format("Hello {}", "London", "Today");
+    if(FMT_OK != my_buf.result) printf("my_buf err: %s\n", fmt_result_string(my_buf.result));
+    printf("1 %s\n", fmt_string_data(&my_buf));
 
     fmt_string_t buf_copy = fmt_copy(&my_buf);
-    printf("%s\n", fmt_string_data(&buf_copy));
+    if(FMT_OK != buf_copy.result) printf("buf_copy err: %s\n", fmt_result_string(buf_copy.result));
+
+    printf("2 %s\n", fmt_string_data(&buf_copy));
 
     result = fmt_fprint_string(stdout, &buf_copy);
     if(FMT_OK != result) printf("fmt_fprint_string err: %s\n", fmt_result_string(result));
-    fmt_print("\n", 1);
+    result = fmt_print("\n\n", 1);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
     result = fmt_print("Hello {}\n", "world");
     if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
@@ -144,8 +161,27 @@ int main()
     result = fmt_concat(&first, &third);
     if(FMT_OK != result) printf("fmt_concat err: %s\n", fmt_result_string(result));
 
-    fmt_print("{}", &first);
+    result = fmt_print("{}", &first);
+    if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
-    fmt_free(&buf);
+    const fmt_result_t free_result = fmt_free(&buf);
+    if(FMT_OK != result) printf("fmt_free err: %s\n", fmt_result_string(free_result));
+
+#if 0
+    {
+        static int int_buf[] = {1,2,3};
+        result = fmt_print("int_buf: {}\n", int_buf);
+        if(FMT_OK != result) printf("int_buf err: %s\n", fmt_result_string(result));
+    }
+#endif
+
+#if 0
+    {
+        const char * const char_str_ptr = "Message";
+        result = fmt_print("char_str_ptr: {}\n", char_str_ptr);
+        if(FMT_OK != result) printf("char_str_ptr err: %s\n", fmt_result_string(result));
+    }
+#endif
+
     return 0;
 }

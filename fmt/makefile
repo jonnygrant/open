@@ -1,6 +1,8 @@
 .PHONY: clean
 
-CFLAGS := -flto -std=c2x -g -Wall -Wextra -Wno-psabi -Wno-unused-parameter -O2 -fsanitize=address,undefined -fno-omit-frame-pointer
+CFLAGS := -flto -std=c2x -g -Wall -Wextra -Wno-psabi -Wno-unused-parameter -O2 -fsanitize=address,undefined,signed-integer-overflow -fno-omit-frame-pointer
+
+# -fstack-usage -Wstack-usage
 
 CC := gcc
 #CC := clang

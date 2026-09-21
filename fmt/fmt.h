@@ -98,34 +98,34 @@ typedef struct
 #define FMT_COUNT(...) \
     FMT_NARG(__VA_ARGS__)
 
-fmt_result_t fmt_init(fmt_string_t * buf);
-fmt_string_t fmt_copy(const fmt_string_t * src);
-fmt_result_t fmt_fprint_string(FILE * restrict stream, const fmt_string_t * buf);
-fmt_result_t fmt_concat(fmt_string_t * dst, const fmt_string_t * src);
+[[nodiscard]] fmt_result_t fmt_init(fmt_string_t * buf);
+[[nodiscard]] fmt_string_t fmt_copy(const fmt_string_t * src);
+[[nodiscard]] fmt_result_t fmt_fprint_string(FILE * restrict stream, const fmt_string_t * buf);
+[[nodiscard]] fmt_result_t fmt_concat(fmt_string_t * dst, const fmt_string_t * src);
 
 /* Access and inspect */
-const char * fmt_string_data(const fmt_string_t * buf);
+[[nodiscard]] const char * fmt_string_data(const fmt_string_t * buf);
 
 /* The capacity in bytes of the buffer */
-size_t fmt_capacity(const fmt_string_t * buf);
+[[nodiscard]] size_t fmt_capacity(const fmt_string_t * buf);
 
 /* The length of text in bytes excluding null terminator */
-size_t fmt_length(const fmt_string_t * buf);
+[[nodiscard]] size_t fmt_length(const fmt_string_t * buf);
 
 /* Access a string representing of the result status code */
-const char * fmt_result(const fmt_string_t * buf);
+[[nodiscard]] const char * fmt_result(const fmt_string_t * buf);
 
-fmt_result_t fmt_result_code(const fmt_string_t * buf);
+[[nodiscard]] fmt_result_t fmt_result_code(const fmt_string_t * buf);
 
 /* Access a string representing of the result status code */
-const char * fmt_result_string(const fmt_result_t result);
+[[nodiscard]] const char * fmt_result_string(const fmt_result_t result);
 
-fmt_string_t fmt_format_impl(const char * restrict format, const fmt_tag_t * args, size_t tag_count);
-fmt_result_t fmt_format_append_impl(fmt_string_t * dst, const char * restrict format, const fmt_tag_t * args, size_t tag_count);
-fmt_result_t fmt_print_impl(FILE * restrict stream, const char * restrict str, const fmt_tag_t * args, size_t tag_count);
+[[nodiscard]] fmt_string_t fmt_format_impl(const char * restrict format, const fmt_tag_t * args, size_t tag_count);
+[[nodiscard]] fmt_result_t fmt_format_append_impl(fmt_string_t * dst, const char * restrict format, const fmt_tag_t * args, size_t tag_count);
+[[nodiscard]] fmt_result_t fmt_print_impl(FILE * restrict stream, const char * restrict str, const fmt_tag_t * args, size_t tag_count);
 
-fmt_result_t fmt_free(fmt_string_t * buf);
-fmt_result_t fmt_clear(fmt_string_t * buf);
+[[nodiscard]] fmt_result_t fmt_free(fmt_string_t * buf);
+[[nodiscard]] fmt_result_t fmt_clear(fmt_string_t * buf);
 
 #define fmt_print(fmt, ...) \
     fmt_print_impl( \
