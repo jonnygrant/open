@@ -1,0 +1,27 @@
+main.c:32: fmt_print err: FMT_ERROR_FEW_ARGS
+Hello planet newline
+Again Hello planet newline
+my_tag true
+pi = 3.14159
+FMT_ARG pi = 3.14159
+my_float 6.1
+my_buf err: FMT_ERROR_MANY_ARGS
+1 
+buf_copy err: FMT_ERROR_VALUE_UNKNOWN
+2 
+fmt_fprint_string err: FMT_ERROR_VALUE_UNKNOWN
+fmt_print err: FMT_ERROR_MANY_ARGS
+Hello world
+int = 42
+Mixed strings: name 10 1.25
+fmt_fprint(stderr, NULL, nullptr) err: FMT_ERROR_NULL
+fmt_fprint(stderr, NULL, NULL) err: FMT_ERROR_NULL
+float: 4.29497e+09
+float: nan
+float: nan
+void*: 0x775c0fc00030
+my_format: int 10, float   3.33
+int32_t: 42
+size_t: 142
+char: a
+first second third
