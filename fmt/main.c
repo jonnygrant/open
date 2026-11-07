@@ -2,7 +2,7 @@
 
 #include "fmt.h"
 
-#define __FILE_LINE__ __FILE__ ":" STRINGIFY(__LINE__) ":"
+#define __FILE_LINE__ __FILE__ ":" STRINGIFY(__LINE__)
 
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
@@ -30,7 +30,6 @@ int main()
 
     result = fmt_print("{} {} {} {}", 1);
     if(FMT_OK != result) printf("%s fmt_print err: %s\n", __FILE_LINE__, fmt_result_string(result));
-
 
     fmt_string_t buf;
     buf = fmt_format("Hello {} newline\n", "planet");
@@ -86,13 +85,13 @@ int main()
     result = fmt_print("Mixed strings: {} {} {}\n", "name", 10, 1.25);
     if(FMT_OK != result) printf("fmt_print err: %s\n", fmt_result_string(result));
 
-    result = fmt_fprint(stderr, "stderr {}\n", "foo");
+    result = fmt_fprint(stderr, "{} stderr {}\n", __FILE_LINE__, "foo");
     if(FMT_OK != result) printf("fmt_fprint err: %s\n", fmt_result_string(result));
 
-    result = fmt_fprint(stderr, "NULL {}\n", NULL);
+    result = fmt_fprint(stderr, "{} NULL {}\n", __FILE_LINE__, NULL);
     if(FMT_OK != result) printf("fmt_fprint err: %s\n", fmt_result_string(result));
 
-    result = fmt_fprint(stderr, "nullptr {}\n", nullptr);
+    result = fmt_fprint(stderr, "{} nullptr {}\n", __FILE_LINE__, nullptr);
     if(FMT_OK != result) printf("fmt_fprint err: %s\n", fmt_result_string(result));
 
     result = fmt_fprint(stderr, NULL, nullptr);
