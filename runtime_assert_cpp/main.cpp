@@ -30,11 +30,11 @@ void test()
     }
     catch (const std::logic_error & e)
     {
-        std::println("Caught std::logic_error: \"{}\"", e.what());
+        std::println("std::logic_error: \"{}\"", e.what());
     }
     catch (const std::exception & e)
     {
-        std::println("Caught exception: \"{}\"", e.what());
+        std::println("Caught: \"{}\"", e.what());
     }
 }
 
