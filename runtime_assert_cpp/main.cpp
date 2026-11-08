@@ -81,8 +81,13 @@ void safe_function()
 }
 
 
+
 int main()
 {
+    //std::runtime_assert_cpp(1 == 2, "std_runtime_assert test");
+
+    std::runtime_assert_cpp2(1 == 2, "1 == 2", "std_runtime_assert test");
+
     //test();
 
     run("Jonathan", 140);

@@ -15,6 +15,18 @@ void __default_assert_runtime_handler(const char * expr,
     std::terminate();
 }
 
+void runtime_assert_cpp(bool expr, const char * msg, const std::source_location loc)
+{
+    __builtin_printf("%d, %s, %s:%d\n", expr, msg, loc.file_name(), loc.line());
+
+    if(!expr)
+    {
+        __builtin_printf("after __builtin_constant_p\n");
+
+        std::__assert_runtime_handler(msg, msg, loc);
+    }
+}
+
 runtime_assert_callback __assert_runtime_handler = std::__default_assert_runtime_handler;
 
 void set_assert_runtime_handler(std::runtime_assert_callback handler) noexcept
