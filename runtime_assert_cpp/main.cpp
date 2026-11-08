@@ -5,17 +5,17 @@
 
 #include "runtime_assert.hpp"
 
-void log_handler(const char * expr, const char * msg, const std::source_location & loc)
+void log_handler(const char * expr, const char * msg, const std::source_location loc)
 {
     std::printf("log_handler runtime_assert: %s:%d %s (%s) message: \"%s\"\n",
-            loc.file_name(), loc.line(), loc.function_name(), expr, msg);
+            loc.file_name(), loc.line(), loc.function_name(), expr?expr:"", msg?msg:"");
 }
 
 
-void custom_assert_handler(const char * expr, const char * msg, const std::source_location & loc)
+void custom_assert_handler(const char * expr, const char * msg, const std::source_location loc)
 {
     std::printf("custom runtime_assert: %s:%d %s (%s) message: \"%s\"\n",
-            loc.file_name(), loc.line(), loc.function_name(), expr, msg);
+            loc.file_name(), loc.line(), loc.function_name(), expr?expr:"", msg?msg:"");
 
     throw std::logic_error(msg);
 }
@@ -41,6 +41,7 @@ void test()
     std::set_assert_runtime_handler(nullptr);
 }
 
+
 void run(const char * name, int value)
 {
     runtime_assert(nullptr != name, "error name is nullptr");
@@ -49,18 +50,21 @@ void run(const char * name, int value)
     std::printf("%s: %d\n", name, value);
 }
 
+
 bool device_connect()
 {
     // do checks here
     return false;
 }
 
+
 void set_degraded_safe_mode()
 {
+    std::printf("In degraded safe mode\n");
 }
 
 
-void safe_handler(const char * expr, const char * msg, const std::source_location & loc)
+void safe_handler(const char * expr, const char * msg, const std::source_location loc)
 {
     std::printf("log error runtime_assert: %s:%d %s (%s) message: \"%s\"\n",
             loc.file_name(), loc.line(), loc.function_name(), expr, msg);
@@ -81,13 +85,8 @@ void safe_function()
 }
 
 
-
 int main()
 {
-    //std::runtime_assert_cpp(1 == 2, "std_runtime_assert test");
-
-    std::runtime_assert_cpp2(1 == 2, "1 == 2", "std_runtime_assert test");
-
     //test();
 
     run("Jonathan", 140);

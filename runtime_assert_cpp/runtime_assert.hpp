@@ -11,23 +11,15 @@ runtime_assert(expr, message)
 
 namespace std {
 
-typedef void (*runtime_assert_callback)(const char * expr, const char * msg, const std::source_location & loc);
+typedef void (*runtime_assert_callback)(const char * expr, const char * msg, const std::source_location loc);
 
 void set_assert_runtime_handler(runtime_assert_callback callback) noexcept;
 
 extern runtime_assert_callback __assert_runtime_handler;
 
-// test if can be all as an inline function
-inline void runtime_assert_cpp2(bool expr,
-                               const char * expression,
-                               const char * message,
-                               std::source_location loc =
-                                   std::source_location::current())
+inline void __runtime_assert(const char * expr, const char * msg, const std::source_location loc)
 {
-    if (!__builtin_constant_p(expr) || !(expr))
-    {
-        std::__assert_runtime_handler(expression, message, loc);
-    }
+    __assert_runtime_handler(expr?expr:"", msg?msg:"", loc);
 }
 
 #define runtime_assert(expr, msg)                    \
@@ -37,8 +29,7 @@ inline void runtime_assert_cpp2(bool expr,
         {                                            \
             if (!(expr))                             \
             {                                        \
-                std::__assert_runtime_handler(       \
-                    #expr, msg,                      \
+                std::__assert_runtime_handler(#expr, msg, \
                     std::source_location::current());\
             }                                        \
         }                                            \
