@@ -1,18 +1,18 @@
 #include <cstdio>
 #include <print>
-#include <exception>
+#include <stdexcept>
 
 #include "runtime_assert.hpp"
 
 namespace std {
 
-void __default_assert_runtime_handler(std::string_view expr,
-                           std::string_view msg, const std::source_location & loc)
+void __default_assert_runtime_handler(const char * expr,
+                           const char * msg, const std::source_location & loc)
 {
-    std::println(stderr, "default runtime_assert: {}:{} {} ({}) message: \"{}\"",
+    std::printf("default runtime_assert: %s:%d %s (%s) message: \"%s\"\n",
             loc.file_name(), loc.line(), loc.function_name(), expr, msg);
 
-    throw std::logic_error(std::string(msg));
+    std::terminate();
 }
 
 runtime_assert_callback __assert_runtime_handler = std::__default_assert_runtime_handler;
