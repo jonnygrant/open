@@ -25,14 +25,11 @@ inline void __runtime_assert(const char * expr, const char * msg, const std::sou
 #define runtime_assert(expr, msg)                    \
     do                                               \
     {                                                \
-        if (!__builtin_constant_p(expr) || !(expr))   \
-        {                                            \
-            if (!(expr))                             \
-            {                                        \
-                std::__assert_runtime_handler(#expr, msg, \
-                    std::source_location::current());\
-            }                                        \
-        }                                            \
+        if (!(expr))                             \
+        {                                        \
+            std::__assert_runtime_handler(#expr, msg, \
+                std::source_location::current());\
+        }                                        \
     } while (0)
 
 } // namespace
